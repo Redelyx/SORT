@@ -81,17 +81,17 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		printf("Temperature sent. Waiting for actuator's list...\n");
-		
-		char buf[BUF_SIZE];	
+		printf("Temperature sent. Waiting for served actuator's number...\n");
 
-		if ( recv(sockfd, buf, BUF_SIZE, 0) == -1 ) 
+		int actuatorsServed;
+		if ( recv(sockfd, &actuatorsServed, sizeof(int), 0) == -1 ) 
 		{
 			perror("Error in receiving response from server\n");
 			exit(1);
 		}
 
-		printf("\nResponse from server: \"%s\"\n", buf);
+		printf("\nI served %i actuators.\n", actuatorsServed);
+		printf("Disconnecting...\n");
 
 		close(sockfd);
 	}	

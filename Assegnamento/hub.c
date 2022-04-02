@@ -19,9 +19,10 @@ char *host_name = "127.0.0.1"; /* local host */
 int port_server = 8000;
 int port_client = 8001;
 
-void clientHub(itemType sensor){
+int clientHub(itemType sensor){
 		struct sockaddr_in serv_addr;
 		struct hostent* server;	
+		int actuatorsNumber = 0;
 
 		if ( ( server = gethostbyname(host_name) ) == 0 ) 
 		{
@@ -48,7 +49,7 @@ void clientHub(itemType sensor){
 		}
 
 
-		printf("Sensor %s sending temperature \"%f\"°C through Hub child process to Server...\n", sensor.id, sensor.temp);
+		printf("---Sensor %s sending temperature \"%f\"°C through Hub child process to Server...\n", sensor.id, sensor.temp);
 
 		if ( send(sockfd, &sensor, sizeof(itemType), 0) == -1 ) 
 		{
@@ -56,31 +57,19 @@ void clientHub(itemType sensor){
 			exit(1);
 		}
 
-		printf("Temperature sent. Waiting for actuator's list from Server...\n");
-		
-		char buf[BUF_SIZE];	
-		buf[0]='\0';
+		printf("----Temperature sent. Waiting for number of actuators served from Server...\n");
 
-		if ( recv(sockfd, buf, BUF_SIZE, 0) == -1 ) 
+		if ( recv(sockfd, &actuatorsNumber, sizeof(int), 0) == -1 ) 
 		{
 			perror("Error in receiving response from server\n");
 			exit(1);
 		}
 
-		printf("\nResponse from Server: \"%s\"\n", buf);
+		printf("\n------Sensor %s served %i actuators.\n", sensor.id, actuatorsNumber);
 
 		close(sockfd);
 
-		char buf[BUF_SIZE] = "Risposta dell'attuatore dal Server\n";
-
-		/* This sends the string plus the string terminator '\0'*/
-		if ( send( sensor.sockfd, buf, BUF_SIZE+ 1, 0 ) == -1) 
-		{
-			perror("Error on send");
-			exit(1);
-		}
-
-		close(sensor.sockfd);
+		return actuatorsNumber;
 }
 
 int main(int argc, char *argv[]) 
@@ -91,7 +80,6 @@ int main(int argc, char *argv[])
 	int sensors_n;
 	LIST sensors;
 	LIST connected_sensors;
-	//LIST actuators;
 	itemType sensor;
 	sensors = NewList();
 	connected_sensors = NewList();
@@ -101,7 +89,7 @@ int main(int argc, char *argv[])
 	else{
 		sensors_n = atoi(argv[1]);
 	}
-	printf("Waiting for %i sensor(s) to send temperature value(s).\n", sensors_n);
+	printf("---Waiting for %i sensor(s) to send temperature value(s).\n", sensors_n);
 
 	// Socket opening
 	int sockfd = socket( PF_INET, SOCK_STREAM, 0 );  
@@ -136,15 +124,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-
 	socklen_t address_size = sizeof( cli_addr );	
 	
-   	char buf[BUF_SIZE];	
+   	//char buf[BUF_SIZE];	
 
 	while(1) 
 	{
 		printf("\n%i: ", getpid());
-		printf("Waiting for a new connection...\n");
+		printf("----Waiting for a new connection...\n");
 
 		/*Accept new connection from Sensor*/		
 		int conn_fd = accept(sockfd, (struct sockaddr *)&cli_addr, &address_size );
@@ -166,7 +153,7 @@ int main(int argc, char *argv[])
 		sensor.sockfd = conn_fd;
 
 		printf("\n%i: ", getpid());
-		printf("Received: \n");
+		printf("-----Received: \n");
 		PrintItem(sensor);
 
 		itemType* tmp_item = Find(sensors, sensor);
@@ -184,12 +171,12 @@ int main(int argc, char *argv[])
 			connected_sensors = EnqueueOrdered(connected_sensors, *tmp_item);
 			printf("sensor found - sensor: %s  served (times): %i\n", sensor.id, sensor.served_n);
 		}
-		//sensors = EnqueueLast(sensors, sensor);
-		//printf("Lunghezza Lista: %i\n",getLength(connected_sensors) );
-		if(getLength(connected_sensors) >= sensors_n){
+		int len = getLength(connected_sensors);
+		if(len >= sensors_n){
 			/* Fork to handle connection */
 			LIST tmp = connected_sensors;
 			do{
+				int actuatorsNumber;
 				if ( (pid = fork()) < 0 ){
 					perror("fork error");
 					exit(-1);
@@ -198,11 +185,11 @@ int main(int argc, char *argv[])
 					/* child servicing the request from conn_fd */ 
 					printf("\nChild - %i: ", getpid());
 					printf("...Serving sensor: %s\n", tmp->item.id);
-					//clientHub(tmp->item);
-					char buf[BUF_SIZE] = "Risposta dell'attuatore dal Server\n";
+					actuatorsNumber = clientHub(tmp->item);
+					printf("-----Act: %i\n", actuatorsNumber);
 
-					/* This sends the string plus the string terminator '\0' */
-					if ( send(tmp->item.sockfd, buf, BUF_SIZE, 0 ) == -1) 
+					/* Send back to sensors the number of actuator served */
+					if ( send(tmp->item.sockfd, &actuatorsNumber, sizeof(int), 0 ) == -1) 
 					{
 						perror("Error on send");
 						exit(1);

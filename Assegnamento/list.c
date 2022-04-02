@@ -1,9 +1,10 @@
 /*  Assegnamento Sistemi Operativi e in Tempo Reale
-	  Alice Cipriani mat. 340403						*/
-
+	Alice Cipriani mat. 340403						*/
+  
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "list.h"
 
@@ -21,12 +22,13 @@
 */
 int itemCompare( itemType item1, itemType item2 )
 {
-  if ( item1.id > item2.id )  /*** esempio ***/
+  /*if ( item1.id > item2.id )  
     return 1;
-  else if ( item1.id < item2.id )  /*** esempio ***/
+  else if ( item1.id < item2.id )  
     return -1;
   else
-    return 0;
+    return 0;*/
+    return strcmp(item1.id, item2.id);
 }
 
 
