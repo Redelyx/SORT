@@ -1,4 +1,4 @@
-all: server hub sensore attuatore
+all: clean server hub sensore attuatore
 
 server: server.o list.o
 	gcc -g -Wall -o $@ $^

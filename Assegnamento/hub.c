@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
 	LIST sensors;
 	LIST connected_sensors;
 	itemType sensor;
+	sensor.type = SENSOR;
 	sensors = NewList();
 	connected_sensors = NewList();
 

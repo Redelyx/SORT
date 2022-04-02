@@ -8,10 +8,6 @@
 
 #include "list.h"
 
-
-
-
-
 /************* Funzioni locali *********************************/
 
 /* Confronta due elementi della lista:
