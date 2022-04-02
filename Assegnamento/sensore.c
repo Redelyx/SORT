@@ -1,3 +1,6 @@
+/*  Assegnamento Sistemi Operativi e in Tempo Reale
+	Alice Cipriani mat. 340403						*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,8 +9,12 @@
 #include <netdb.h>
 #include <time.h>
 
+#include <math.h>
 
-#define BUF_SIZE 1000
+#include "list.h"
+
+
+#define BUF_SIZE 30
 
 
 char *host_name = "127.0.0.1"; /* local host */
@@ -17,28 +24,28 @@ int port = 8000;
 int main(int argc, char *argv[]) 
 {
 	//dafault value	
-	char sensor_id[10];
+	itemType sensor;
 	int iter_n;
 
 	srand((unsigned int)time(NULL));
 
 	if (argc < 3) {
-		strcpy(sensor_id, "Sensor");		
+		strcpy(sensor.id, "Sensor");		
 		iter_n = 1;
 	}else{
-		strcpy(sensor_id, argv[1]);
-		long arg = strtol(argv[1], NULL, 10);
-		iter_n = arg;
+		strcpy(sensor.id, argv[1]);
+		iter_n = atoi(argv[2]);
 	}
 	
-	printf("sensor_id:%s\n Number of measures: %i\n", sensor_id, iter_n);
+	printf("sensor_id:%s\n Number of measures: %i\n", sensor.id, iter_n);
 
 	for(int i = 0; i<iter_n; i++){
 
 		struct sockaddr_in serv_addr;
 		struct hostent* server;	
 		
-		float temp = ((float)rand()/RAND_MAX)*(float)(40.0) - (float)(5.0);
+		sensor.temp = ((float)rand()/RAND_MAX)*(float)(40.0) - (float)(5.0);
+
 
 		if ( ( server = gethostbyname(host_name) ) == 0 ) 
 		{
@@ -65,10 +72,10 @@ int main(int argc, char *argv[])
 		}
 
 
-		printf("Sending temperature \"%f\"°C to hub...\n", temp);
+		printf("Sensor %s sending temperature \"%f\"°C to hub...\n", sensor.id, sensor.temp);
 
 		/* This sends the temperature value to the hub */
-		if ( send(sockfd, &temp, sizeof(float), 0) == -1 ) 
+		if ( send(sockfd, &sensor, sizeof(itemType), 0) == -1 ) 
 		{
 			perror("Error on send\n");
 			exit(1);
@@ -77,7 +84,6 @@ int main(int argc, char *argv[])
 		printf("Temperature sent. Waiting for actuator's list...\n");
 		
 		char buf[BUF_SIZE];	
-		buf[0]='\0';
 
 		if ( recv(sockfd, buf, BUF_SIZE, 0) == -1 ) 
 		{

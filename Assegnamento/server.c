@@ -1,3 +1,6 @@
+/*  Assegnamento Sistemi Operativi e in Tempo Reale
+	Alice Cipriani mat. 340403						*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,12 +9,9 @@
 #include <unistd.h>
 #include <netdb.h>
 
-
-#define BUF_SIZE 1000
-
+#define BUF_SIZE 30
 
 int port = 8000;
-
 
 int main() 
 {
@@ -61,7 +61,7 @@ int main()
 		printf("\nWaiting for a new connection...\n");
 		
 		// New connection acceptance		
-		int newsockfd = accept( sockfd, (struct sockaddr *)&cli_addr, &address_size );      
+		int newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &address_size );      
 		if (newsockfd == -1) 
 		{
 			perror("Error on accept");

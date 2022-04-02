@@ -1,3 +1,6 @@
+/*  Assegnamento Sistemi Operativi e in Tempo Reale
+	  Alice Cipriani mat. 340403						*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -18,9 +21,9 @@
 */
 int itemCompare( itemType item1, itemType item2 )
 {
-  if ( item1.value > item2.value )  /*** esempio ***/
+  if ( item1.id > item2.id )  /*** esempio ***/
     return 1;
-  else if ( item1.value < item2.value )  /*** esempio ***/
+  else if ( item1.id < item2.id )  /*** esempio ***/
     return -1;
   else
     return 0;
@@ -132,9 +135,17 @@ itemType getTail(LIST l)
    ritorna NULL se non lo trova */
 itemType* Find( LIST l, itemType item )
 {
-  assert(FALSE);
+	LIST tmp = l;
 
-  /* TODO */
+  	while(!isEmpty(tmp) && itemCompare(tmp->item, item) != 0){
+  		tmp = tmp->next;
+  	}
+
+	if(isEmpty(tmp)){
+		return NULL;
+	}else{
+		return &(tmp->item);
+	}
 
   return NULL;
 }
@@ -144,11 +155,9 @@ itemType* Find( LIST l, itemType item )
 /* Inserisce un elemento nella prima posizione della lista */
 LIST EnqueueFirst (LIST l, itemType item)
 {
-  assert(FALSE);
-
-  /* TODO */
-
-  return l;
+  NODE * new_node = createNode(item);
+  new_node->next = l;
+  return new_node;
 }
 
 
@@ -168,7 +177,6 @@ LIST EnqueueLast (LIST l, itemType item)
     LIST tmp = l;
     while ( !isEmpty( tmp -> next ) )
       tmp = tmp -> next;
-
     tmp -> next = new_node;
   }
 
@@ -180,9 +188,28 @@ LIST EnqueueLast (LIST l, itemType item)
 /* Inserisce un elemento mantenendo la lista ordinata */
 LIST EnqueueOrdered(LIST l, itemType item )
 {
-  assert(FALSE);
+  NODE * new_node = createNode(item);
 
-  /* TODO */
+  if ( isEmpty( l ) || item.served_n < l->item.served_n)
+  {
+    /* Lista vuota: inserimento in testa */
+    l = EnqueueFirst(l, item);
+  }
+  else{
+    LIST tmp = l;
+    while ( !isEmpty( tmp -> next ) ){
+      if(item.served_n > tmp->item.served_n)
+        tmp = tmp -> next;
+      else{
+        NODE * new_next = tmp -> next;
+        tmp -> next = new_node;
+        new_node->next = new_next;
+        return l;
+      }
+    }
+
+    tmp -> next = new_node;
+  }
 
   return l;
 }
@@ -255,8 +282,9 @@ LIST Dequeue( LIST l, itemType item )
 /* Stampa a video un elemento della lista */
 void PrintItem( itemType item )
 {
-  /*** esempio ***/
-  printf( "%f", item.value );
+  printf( "\tSensor id: %s\n", item.id );
+  printf( "\tTemperature: %f\n", item.temp );
+  //printf("\tTimes served: %i\n", item.served_n );
 }
 
 
