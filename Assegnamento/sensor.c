@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 	//dafault value	
 	itemType sensor;
 	int iter_n;
+	int randSleep;
 
 	srand((unsigned int)time(NULL));
 
@@ -45,7 +46,7 @@ int main(int argc, char *argv[])
 		struct hostent* server;	
 		
 		sensor.temp = ((float)rand()/RAND_MAX)*(float)(40.0) - (float)(5.0);
-
+		randSleep = (rand()%6+1);
 
 		if ( ( server = gethostbyname(host_name) ) == 0 ) 
 		{
@@ -72,7 +73,7 @@ int main(int argc, char *argv[])
 		}
 
 
-		printf("Sensor %s sending temperature \"%f\"°C to hub...\n", sensor.id, sensor.temp);
+		printf("Sensor %s sending temperature %f °C to hub...\n", sensor.id, sensor.temp);
 
 		/* This sends the temperature value to the hub */
 		if ( send(sockfd, &sensor, sizeof(itemType), 0) == -1 ) 
@@ -90,10 +91,12 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		printf("\nI served %i actuators.\n", actuatorsServed);
-		printf("Disconnecting...\n");
+		printf("I served %i actuators.\n", actuatorsServed);
+		printf("Disconnecting...\n\n\n");
 
 		close(sockfd);
+
+		sleep(randSleep);
 	}	
 	
 

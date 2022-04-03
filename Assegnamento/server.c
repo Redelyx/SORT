@@ -16,6 +16,17 @@
 int portHub = 8001;
 int portActuator = 8002;
 
+void disconnect(itemType * found, int newsockfd){
+	itemType uns_msg;
+	strcpy(uns_msg.id, "");
+	if ( send( newsockfd, &uns_msg, sizeof(itemType), 0 ) == -1) {
+		perror("Error on send");
+		exit(1);
+	}
+	close(newsockfd);
+	/*unsubscribe the actuator from every sensor he is listening to*/
+}
+
 int main(){
 	struct sockaddr_in serv_addr;
 	struct sockaddr_in cli_addr;
@@ -31,8 +42,7 @@ int main(){
 
 	itemType msg;
 	itemType new_msg;
-	itemType uns_msg;
-	strcpy(uns_msg.id, "");
+
 	itemType * found;
 
 	/*opening socket with hub child*/
@@ -96,16 +106,7 @@ int main(){
 				/*send a msg with an empty string to let the actuator disconnect*/
 				found = Find(actuators, msg);
 				if(found != NULL){
-					if ( send( newsockfd, &uns_msg, sizeof(itemType), 0 ) == -1) {
-						perror("Error on send");
-						exit(1);
-					}
-					if ( send( found->sockfd, &uns_msg, sizeof(itemType), 0 ) == -1) {
-						perror("Error on send");
-						exit(1);
-					}
-					close(found->sockfd);
-					/*unsubscribe the actuator from every sensor he is listening to*/
+					disconnect(found, newsockfd);
 					while(Find(actuators, msg) != NULL){
 						actuators = Dequeue(actuators, msg);
 					}
@@ -117,22 +118,29 @@ int main(){
 
 				close(newsockfd);
 			}else{
-				/*Save the socketfd for closing the connection later*/
-				msg.sockfd = newsockfd;
-				int sensorNumber;
-				if ( recv( newsockfd, &sensorNumber, sizeof(int), 0 ) == -1) {
-					perror("Error on receive");
-					exit(1);
-				}
-				printf("Actuator %s is listening to %i sensors: ", msg.id, sensorNumber);
-				for(int i = 0; i<sensorNumber; i++){
-					if ( recv( newsockfd, &new_msg, sizeof(itemType), 0 ) == -1) {
+				if(Find(actuators, msg) != NULL){
+					printf("Actuators already connected!\n ---Sending disconnection signal...---\n\n");
+					disconnect(&msg, newsockfd);
+				}else{
+					msg.sockfd = newsockfd;
+					/*Save the socketfd for closing the connection later*/
+					int sensorNumber;
+					if ( recv( newsockfd, &sensorNumber, sizeof(int), 0 ) == -1) {
 						perror("Error on receive");
 						exit(1);
 					}
-					strcpy(msg.sensor, new_msg.id);
-					printf(" %s ", new_msg.id);
-					actuators = EnqueueFirst(actuators, msg);
+
+					printf("Actuator %s is listening to %i sensors: ", msg.id, sensorNumber);
+					for(int i = 0; i<sensorNumber; i++){
+						if ( recv( newsockfd, &new_msg, sizeof(itemType), 0 ) == -1) {
+							perror("Error on receive");
+							exit(1);
+						}
+						strcpy(msg.sensor, new_msg.id);
+						printf(" %s ", new_msg.id);
+						actuators = EnqueueFirst(actuators, msg);
+						PrintList(actuators);
+					}
 				}
 				printf("\n");
 			}

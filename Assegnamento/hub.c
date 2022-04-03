@@ -163,15 +163,16 @@ int main(int argc, char *argv[])
 			sensor.served_n++;
 			sensors = EnqueueLast(sensors, sensor);
 			connected_sensors = EnqueueFirst(connected_sensors, sensor);
-			printf("new sensor! - sensor: %s  served (times): %i\n", sensor.id, sensor.served_n);
+			printf("- New sensor! - sensor: %s  served (times): %i\n", sensor.id, sensor.served_n-1);
 		}else{
 			/*Known sensor: insert in the connectedSensor list, retreiving the old priority*/
 			tmp_item->sockfd = sensor.sockfd;
 			tmp_item->temp = sensor.temp;
 			tmp_item->served_n++;
 			connected_sensors = EnqueueOrdered(connected_sensors, *tmp_item);
-			printf("sensor found - sensor: %s  served (times): %i\n", sensor.id, sensor.served_n);
+			printf("- Sensor found - sensor: %s  served (times): %i\n", sensor.id, tmp_item->served_n-1);
 		}
+		PrintPriority(connected_sensors);
 		int len = getLength(connected_sensors);
 		if(len >= sensors_n){
 			/* Fork to handle connection */
@@ -187,7 +188,6 @@ int main(int argc, char *argv[])
 					printf("\nChild - %i: ", getpid());
 					printf("...Serving sensor: %s\n", tmp->item.id);
 					actuatorsNumber = clientHub(tmp->item);
-					printf("-----Act: %i\n", actuatorsNumber);
 
 					/* Send back to sensors the number of actuator served */
 					if ( send(tmp->item.sockfd, &actuatorsNumber, sizeof(int), 0 ) == -1) 

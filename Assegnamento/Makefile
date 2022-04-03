@@ -1,4 +1,4 @@
-all: clean server hub sensore attuatore
+all: clean server hub sensor actuator
 
 server: server.o list.o
 	gcc -g -Wall -o $@ $^
@@ -6,15 +6,12 @@ server: server.o list.o
 hub: hub.o list.o
 	gcc -g -Wall -o $@ $^
 
-sensore: sensore.o list.o
+sensor: sensor.o list.o
 	gcc -g -Wall -o $@ $^ -lm
 
-attuatore: attuatore.o list.o
-	gcc -g -Wall -o $@ $^
-
-prova: prova.o list.o
+actuator: actuator.o list.o
 	gcc -g -Wall -o $@ $^
 
 clean:
-	rm -f server hub sensore attuatore prova *.o *~
+	rm -f server hub sensor actuator *.o *~
 

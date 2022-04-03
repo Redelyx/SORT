@@ -10,7 +10,6 @@
 
 #include "list.h"
 
-
 #define BUF_SIZE 30
 
 char *host_name = "127.0.0.1"; /* local host */
@@ -44,8 +43,7 @@ int main(int argc, char *argv[])
 		struct sockaddr_in serv_addr;
 		struct hostent* server;	
 		
-		if ( ( server = gethostbyname(host_name) ) == 0 ) 
-		{
+		if ( ( server = gethostbyname(host_name) ) == 0 ) {
 			perror("Error resolving local host\n");
 			exit(1);
 		}
@@ -80,7 +78,7 @@ int main(int argc, char *argv[])
 
 		if(strcmp(msg.id, "")==0){
 			/*Received empty string. Actuator must disconnect.*/
-			printf("---Unsubscribe successfull...\n---Disconnecting...\n");
+			printf("---Unsubscribe successfull...\n\n---Disconnecting...\n");
 			close(sockfd);
 			exit(0);
 		}
@@ -89,24 +87,27 @@ int main(int argc, char *argv[])
 		/*Insert temperature to achieve for this actuator*/
 		printf("Insert Temperature to achieve:\n");
 		scanf("%f", &actuator.temp);
-		printf("Temperature set to: %f\n", actuator.temp);
+		printf("Temperature set to: %f°C\n", actuator.temp);
 
 		/*Insert list with sensors to listen*/
 		printf("Insert Sensors to listen: 	(Terminate with \"exit\" string)\n");
 		itemType sensor;
 		do{
 			scanf("%s", sensor.id);
-			printf("---Starting to listen to %s\n", sensor.id);
-			if(strcmp(sensor.id, "exit")!=0)
+			if(strcmp(sensor.id, "exit")!=0) {
 				sensorsToListen = EnqueueFirst(sensorsToListen, sensor);
+				printf("-Starting to listen to %s\n", sensor.id);
+			}else{
+				printf("--Starting heating system...\n");
+			}
+
 		}while(strcmp(sensor.id, "exit")!=0);
 			
 		/*Establish connection with server*/
 		struct sockaddr_in serv_addr;
 		struct hostent* server;	
 		
-		if ( ( server = gethostbyname(host_name) ) == 0 ) 
-		{
+		if ( ( server = gethostbyname(host_name) ) == 0 ) {
 			perror("Error resolving local host\n");
 			exit(1);
 		}
@@ -117,64 +118,61 @@ int main(int argc, char *argv[])
 		serv_addr.sin_port = htons(port);
 		
 		int sockfd = socket( PF_INET, SOCK_STREAM, 0 );
-		if ( sockfd == -1 ) 
-		{
+		if ( sockfd == -1 ) {
 			perror("Error opening socket\n");
 			exit(1);
 		}    
 
-		if ( connect(sockfd, (void*)&serv_addr, sizeof(serv_addr) ) == -1 ) 
-		{
+		if ( connect(sockfd, (void*)&serv_addr, sizeof(serv_addr) ) == -1 ) {
 			perror("Error connecting to socket\n");
 			exit(1);
 		}
 		
 		/*Send actuator name and specs to server*/
-		if ( send(sockfd, &actuator, sizeof(itemType), 0) == -1 ) 
-		{
+		if ( send(sockfd, &actuator, sizeof(itemType), 0) == -1 ) {
 			perror("Error on send\n");
 			exit(1);
 		}
 
 		int len = getLength(sensorsToListen);
 		/*Send number of sensors to listen to*/
-		if ( send(sockfd, &len, sizeof(int), 0) == -1 ) 
-		{
+		if ( send(sockfd, &len, sizeof(int), 0) == -1 ) {
 			perror("Error on send\n");
 			exit(1);
 		}
 
-		printf("---Actuator specifications sent. Waiting for response...\n");
+		printf("---Actuator specifications sent.\n");
+		PrintItem(actuator);
 
 		LIST tmp_list = sensorsToListen;
 
 		/*Send sensors one by one*/
 		for(int i = 0; i < len; i++){
-			if ( send(sockfd, &tmp_list->item, sizeof(itemType), 0) == -1 ) 
-			{
+			if ( send(sockfd, &tmp_list->item, sizeof(itemType), 0) == -1 ) {
 				perror("Error on send\n");
 				exit(1);
 			}
 			tmp_list = tmp_list->next;
 		}
 		
-		printf("---List of Sensors sent. Waiting for response...\n");
+		printf("----List of Sensors sent. Waiting for response...\n");
 
 		/*Wait for server to send back sensors temperatures*/
 		while(1){
 			onOffSwitch = 0;
 			tmp_list = DeleteList(tmp_list);
-			printf("---All set. Waiting for measures to adjust temperature...\n");
+			printf("-----All set. Waiting for measures to adjust temperature...\n");
 
-			if ( recv(sockfd, &msg, sizeof(itemType), 0) == -1 ) 
-			{
+			if ( recv(sockfd, &msg, sizeof(itemType), 0) == -1 ) {
 				perror("Error in receiving response from server\n");
 				exit(1);
 			}
 
 			if(strcmp(msg.id, "")==0){
 				/*Received empty string. Actuator must disconnect.*/
+				printf("\n\n\n-----------------------------\n");
 				printf("---Disconnecting...\n");
+				printf("-----------------------------\n");
 				close(sockfd);
 				exit(0);
 			}else{
@@ -182,28 +180,34 @@ int main(int argc, char *argv[])
 				itemType * oldMsg = Find(receivedMeasures, msg);
 				if(oldMsg){
 					/*Received new temperature... from a known sensor. Update the old measure.*/
-					printf("---Received temperature: %f from a known Sensor: %s\n", msg.temp, msg.id);
+					printf("---Received temperature: %f °C from a known Sensor: %s\n", msg.temp, msg.id);
 					oldMsg->temp = msg.temp;
 				}else{
 					/*Received new temperature... from a new sensor. Add new measure.*/
-					printf("---Received temperature: %f from new Sensor: %s\n", msg.temp, msg.id);
+					printf("---Received temperature: %f °C from new Sensor: %s\n", msg.temp, msg.id);
 					receivedMeasures = EnqueueFirst(receivedMeasures, msg);
 				}
 				tmp_list = receivedMeasures;
 				/*Manage the heating on off switch.*/
+				printf("\n\n\n-----------------------------\n");
+				printf("---Managing heating system---\n");
+				printf("---Temperatures received:\n");
 				for(int i = 0; i < getLength(receivedMeasures); i++){
 					if(actuator.temp > tmp_list->item.temp ){
+						printf("\tReceived %f °C (< %f °C) from sensor %s\n", tmp_list->item.temp, actuator.temp, tmp_list->item.id);
 						onOffSwitch++;
 					}else{
+						printf("\tReceived %f °C (>= %f °C) from sensor %s\n", tmp_list->item.temp, actuator.temp, tmp_list->item.id);				
 						onOffSwitch--;
 					}
 					tmp_list = tmp_list->next;
 				}
-				if(onOffSwitch >= 0){
-					printf("Powering ON heating...");
+				if(onOffSwitch > 0){
+					printf("---Powering ON heating...---\n");
 				}else{
-					printf("Powering OFF heating...");
+					printf("---Powering OFF heating...---\n");
 				}
+				printf("-----------------------------\n\n\n");
 			}
 		}
 	}

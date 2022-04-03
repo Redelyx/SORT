@@ -188,17 +188,20 @@ LIST EnqueueOrdered(LIST l, itemType item )
 {
   NODE * new_node = createNode(item);
 
-  if ( isEmpty( l ) || item.served_n < l->item.served_n)
-  {
-    /* Lista vuota: inserimento in testa */
+
+  if ( isEmpty( l ) || item.served_n < l->item.served_n){
+    /* Empty list or item with higher priority than the head item: inserting with maximum priority */
     l = EnqueueFirst(l, item);
   }
   else{
     LIST tmp = l;
+    /* scan the list until it's empty */
     while ( !isEmpty( tmp -> next ) ){
-      if(item.served_n > tmp->item.served_n)
+      if(item.served_n >= tmp->next->item.served_n)
+        /* item has lower or equal priority than the element in the list: continue scrolling*/
         tmp = tmp -> next;
       else{
+        /* item has a higher priority than the element in the list: insert*/
         NODE * new_next = tmp -> next;
         tmp -> next = new_node;
         new_node->next = new_next;
@@ -280,9 +283,13 @@ LIST Dequeue( LIST l, itemType item )
 /* Stampa a video un elemento della lista */
 void PrintItem( itemType item )
 {
-  printf( "\tSensor id: %s\n", item.id );
-  printf( "\tTemperature: %f\n", item.temp );
-  //printf("\tTimes served: %i\n", item.served_n );
+  if(item.type == ACTUATOR){
+    printf( "\tActuator id: %s is listening to: %s\n", item.id, item.sensor );
+    printf( "\t\tTgoal: %f\n", item.temp );
+  }else{
+    printf( "\tSensor id: %s\n", item.id );
+    printf( "\t\tTemp: %f °C\n", item.temp );
+  }
 }
 
 
@@ -291,14 +298,38 @@ void PrintItem( itemType item )
 void PrintList( LIST l )
 {
   LIST tmp = l;
-  while ( !isEmpty(tmp) ) 
-  {
+  printf("\n\n\n--------------------------------");
+  if(tmp->item.type == ACTUATOR){
+      printf("\n\n---Printing actuators list: ----\n");
+  }else{
+      printf("\n\n---Printing sensors list: ---\n");
+  }
+
+  while ( !isEmpty(tmp) ) {
     PrintItem( tmp->item );
     tmp = tmp -> next;
 
     if ( ! isEmpty(tmp) )
       printf(" ");
   }
+  printf("--------------------------------\n\n\n");
 }
+
+void PrintPriority( LIST l )
+{
+  LIST tmp = l;
+  printf("\n\n\n--------------------------------");
+  printf("\n\n---Printing sensors priority list: ---\n");
+  while ( !isEmpty(tmp) ) {
+    printf( "\tSensor id: %s\n", tmp->item.id );
+    printf( "\t\tTimes served: %i\n", tmp->item.served_n );
+    tmp = tmp -> next;
+
+    if ( ! isEmpty(tmp) )
+      printf(" ");
+  }
+  printf("--------------------------------\n\n\n");
+}
+
 
 
