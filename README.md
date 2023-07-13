@@ -1,2 +1,2 @@
 # SORT
-Some esercises from "Operating and Real-time systems" course.
+Some esercises from "Real-time Operating systems" course.
